@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StreakVault — Daily Streak Maintainer</title>
+  <style>
+    :root{
+      --bg:#08111f;
+      --bg2:#0b1730;
+      --card: rgba(12, 21, 39, 0.72);
+      --card2: rgba(16, 28, 52, 0.92);
+      --text:#ecf3ff;
+      --muted:#9db0d1;
+      --line: rgba(160, 187, 255, 0.14);
+      --brand:#7c5cff;
+      --brand2:#20c997;
+      --warn:#ffb703;
+      --danger:#ff5d6c;
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+      --radius: 24px;
+    }
+
+    * { box-sizing:border-box; }
+    html, body { height:100%; }
+    body {
+      margin:0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(124,92,255,.22), transparent 32%),
+        radial-gradient(circle at top right, rgba(32,201,151,.18), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(255,183,3,.11), transparent 24%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
+      overflow-x:hidden;
+    }
+
+    .app-shell{
+      min-height:100%;
+      position:relative;
+      isolation:isolate;
+    }
+
+    .bg-orb{
+      position:fixed;
+      border-radius:50%;
+      filter: blur(28px);
+      opacity:.35;
+      z-index:-1;
+      animation: float 16s ease-in-out infinite;
+    }
+    .orb1{ width:280px; height:280px; left:-90px; top:40px; background:rgba(124,92,255,.85); }
+    .orb2{ width:220px; height:220px; right:-70px; top:20%; background:rgba(32,201,151,.75); animation-delay:-6s; }
+    .orb3{ width:260px; height:260px; left:20%; bottom:-110px; background:rgba(255,183,3,.6); animation-delay:-11s; }
+
+    @keyframes float{
+      0%,100% { transform: translate3d(0,0,0) scale(1); }
+      50% { transform: translate3d(0,-16px,0) scale(1.08); }
+    }
+
+    .wrap{
+      max-width: 1440px;
+      margin:0 auto;
+      padding: 24px;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom:20px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      font-weight:800;
+      letter-spacing:.4px;
+    }
+
+    .brand-mark{
+      width:48px;height:48px;border-radius:16px;
+      background: linear-gradient(135deg, var(--brand), #4cc9f0);
+      display:grid;
+      place-items:center;
+      box-shadow: 0 10px 30px rgba(124,92,255,.35);
+      font-size:22px;
+    }
+
+    .brand small{
+      display:block;
+      color:var(--muted);
+      font-weight:600;
+      margin-top:2px;
+    }
+
+    .pill{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color:var(--muted);
+      padding:10px 14px;
+      border-radius:999px;
+      font-size:13px;
+      backdrop-filter: blur(16px);
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      white-space:nowrap;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap: 18px;
+      align-items:start;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      overflow:hidden;
+    }
+
+    .card-inner{ padding:20px; }
+
+    .hero{
+      position:relative;
+      padding:22px;
+      overflow:hidden;
+    }
+
+    .hero::before{
+      content:"";
+      position:absolute;
+      inset:auto -10% -40% auto;
+      width:220px;height:220px;
+      background: radial-gradient(circle, rgba(124,92,255,.32), transparent 65%);
+      border-radius:50%;
+      pointer-events:none;
+    }
+
+    .hero h1{
+      margin:0 0 8px;
+      font-size: clamp(26px, 4vw, 40px);
+      line-height:1.05;
+    }
+
+    .hero p{
+      margin:0;
+      color:var(--muted);
+      max-width: 60ch;
+      line-height:1.6;
+    }
+
+    .goal-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      margin-top:18px;
+      align-items:center;
+    }
+
+    .goal-badge{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:12px 14px;
+      border-radius:18px;
+      background: rgba(7,12,24,.4);
+      border:1px solid var(--line);
+      min-width: 0;
+    }
+
+    .goal-badge strong{
+      display:block;
+      font-size:15px;
+      max-width: 26ch;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .goal-badge span{
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      margin-top:2px;
+    }
+
+    .stats{
+      display:grid;
+      grid-template-columns: repeat(2,1fr);
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .stat{
+      padding:16px;
+      border-radius:20px;
+      border:1px solid var(--line);
+      background: rgba(7,12,24,.35);
+      transition: transform .2s ease, border-color .2s ease;
+    }
+    .stat:hover{ transform: translateY(-2px); border-color: rgba(124,92,255,.35); }
+    .stat .label{ color:var(--muted); font-size:12px; }
+    .stat .value{ font-size:28px; font-weight:800; margin-top:8px; line-height:1; }
+    .stat .sub{ color:var(--muted); font-size:12px; margin-top:6px; }
+
+    .progress-wrap{
+      margin-top:18px;
+      padding:16px;
+      border-radius:20px;
+      border:1px solid var(--line);
+      background: rgba(7,12,24,.35);
+    }
+    .progress-head{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      margin-bottom:12px;
+    }
+    .progress-title{
+      font-weight:700;
+      margin:0;
+    }
+    .progress-meta{ color:var(--muted); font-size:13px; }
+
+    .bar{
+      height:14px;
+      border-radius:999px;
+      background: rgba(255,255,255,.08);
+      overflow:hidden;
+      position:relative;
+    }
+    .bar > span{
+      display:block;
+      height:100%;
+      width:0%;
+      border-radius:inherit;
+      background: linear-gradient(90deg, var(--brand), #4cc9f0, var(--brand2));
+      box-shadow: 0 0 30px rgba(124,92,255,.45);
+      transition: width .55s cubic-bezier(.2,.8,.2,1);
+    }
+    .bar.small{ height:10px; }
+
+    .sidebar-section{
+      margin-top:18px;
+      padding:18px;
+      border-radius:20px;
+      border:1px solid var(--line);
+      background: rgba(7,12,24,.35);
+    }
+
+    .sidebar-section h3{
+      margin:0 0 12px;
+      font-size:15px;
+    }
+    .sidebar-section p,.muted{ color:var(--muted); }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .field label{
+      font-size:13px;
+      color:var(--muted);
+      font-weight:600;
+    }
+    input, textarea, select, button{
+      font:inherit;
+    }
+    input, textarea, select{
+      width:100%;
+      border:none;
+      outline:none;
+      color:var(--text);
+      background: rgba(255,255,255,.05);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px 14px;
+      transition: border-color .2s ease, transform .2s ease, background .2s ease;
+    }
+    input:focus, textarea:focus, select:focus{
+      border-color: rgba(124,92,255,.65);
+      background: rgba(255,255,255,.07);
+    }
+    textarea{ min-height: 110px; resize: vertical; }
+
+    .btn-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      border:none;
+      border-radius:16px;
+      padding:12px 16px;
+      cursor:pointer;
+      color:var(--text);
+      font-weight:700;
+      letter-spacing:.2px;
+      transition: transform .18s ease, opacity .18s ease, box-shadow .18s ease;
+      background: rgba(255,255,255,.08);
+      border:1px solid var(--line);
+    }
+    .btn:hover{ transform: translateY(-1px); }
+    .btn.primary{
+      background: linear-gradient(135deg, var(--brand), #4cc9f0);
+      box-shadow: 0 12px 28px rgba(124,92,255,.28);
+      border-color: transparent;
+    }
+    .btn.success{
+      background: linear-gradient(135deg, var(--brand2), #00b4d8);
+      border-color: transparent;
+    }
+    .btn.warn{
+      background: linear-gradient(135deg, #f59e0b, #ff7b00);
+      border-color: transparent;
+    }
+    .btn.ghost{
+      background: transparent;
+    }
+    .btn.danger{
+      background: linear-gradient(135deg, #ff5d6c, #ff7b2f);
+      border-color: transparent;
+    }
+
+    .main-grid{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:18px;
+    }
+
+    .section-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:12px;
+      margin-bottom:14px;
+    }
+    .section-title h2{ margin:0; font-size:20px; }
+    .section-title span{ color:var(--muted); font-size:13px; }
+
+    .day-control{
+      display:grid;
+      grid-template-columns: 1.4fr .6fr .6fr auto;
+      gap:10px;
+      align-items:end;
+      margin-bottom:14px;
+    }
+
+    .task-list, .excuse-list, .timeline{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .task{
+      display:flex;
+      align-items:flex-start;
+      gap:12px;
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      transition: transform .16s ease, border-color .16s ease;
+    }
+    .task:hover{ transform: translateY(-1px); border-color: rgba(32,201,151,.35); }
+    .task input[type="checkbox"]{
+      width:18px; height:18px; margin-top:2px;
+      accent-color: var(--brand2);
+      flex:0 0 auto;
+    }
+    .task .txt{
+      flex:1;
+      line-height:1.45;
+      word-break:break-word;
+    }
+    .task.done .txt{
+      text-decoration: line-through;
+      color: rgba(236,243,255,.72);
+    }
+    .task small{
+      color:var(--muted);
+      display:block;
+      margin-top:4px;
+    }
+
+    .mini-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .mini-head h4{ margin:0; }
+    .mini-head small{ color:var(--muted); }
+
+    .empty{
+      padding:18px;
+      border-radius:18px;
+      border:1px dashed rgba(157,176,209,.3);
+      color:var(--muted);
+      text-align:center;
+      background: rgba(255,255,255,.03);
+    }
+
+    .timeline-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap:12px;
+    }
+
+    .day-card{
+      padding:14px;
+      border-radius:18px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      cursor:pointer;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease;
+      position:relative;
+      overflow:hidden;
+    }
+    .day-card:hover{ transform: translateY(-2px); border-color: rgba(124,92,255,.35); }
+    .day-card.active{
+      border-color: rgba(124,92,255,.8);
+      background: linear-gradient(180deg, rgba(124,92,255,.18), rgba(255,255,255,.04));
+    }
+    .day-card.done::after{
+      content:"✓";
+      position:absolute;
+      right:12px;
+      top:10px;
+      width:26px;height:26px;
+      display:grid;
+      place-items:center;
+      border-radius:50%;
+      background: rgba(32,201,151,.15);
+      color: #73f3ca;
+      border:1px solid rgba(32,201,151,.35);
+      font-weight:900;
+    }
+    .day-card .d1{ font-size:12px; color:var(--muted); }
+    .day-card .d2{ font-size:15px; font-weight:700; margin-top:5px; }
+    .day-card .d3{ font-size:12px; color:var(--muted); margin-top:8px; }
+    .day-card .mini-bar{ margin-top:10px; }
+
+    .split{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+
+    .journal-entry{
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+    }
+    .journal-entry time{
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      margin-bottom:8px;
+    }
+    .journal-entry p{ margin:0; line-height:1.55; white-space:pre-wrap; }
+
+    .login-screen{
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:24px;
+    }
+
+    .login-card{
+      width:min(760px, 100%);
+      padding:24px;
+      border-radius:30px;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border:1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(22px);
+    }
+
+    .login-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:18px;
+      margin-top:18px;
+    }
+
+    .login-side{
+      padding:22px;
+      border-radius:24px;
+      background: rgba(7,12,24,.35);
+      border:1px solid var(--line);
+      overflow:hidden;
+      position:relative;
+    }
+    .login-side::after{
+      content:"";
+      position:absolute;
+      inset:auto -15% -30% auto;
+      width:220px;height:220px;border-radius:50%;
+      background: radial-gradient(circle, rgba(124,92,255,.25), transparent 66%);
+    }
+    .login-side h1{ margin:0 0 10px; font-size:34px; line-height:1.05; }
+    .login-side p{ color:var(--muted); line-height:1.6; margin:0; }
+
+    .notice{
+      margin-top:14px;
+      color:#b8c9ef;
+      font-size:13px;
+      line-height:1.55;
+      padding:12px 14px;
+      border-radius:16px;
+      background: rgba(124,92,255,.12);
+      border:1px solid rgba(124,92,255,.22);
+    }
+
+    .toggle{
+      display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;
+    }
+    .toggle button{
+      padding:10px 14px;
+      border-radius:999px;
+      background: rgba(255,255,255,.05);
+    }
+    .toggle button.active{
+      background: linear-gradient(135deg, var(--brand), #4cc9f0);
+      border-color: transparent;
+    }
+
+    .foot-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+
+    .toast{
+      position:fixed;
+      right:18px;
+      bottom:18px;
+      max-width:min(380px, calc(100vw - 36px));
+      padding:14px 16px;
+      border-radius:18px;
+      background: rgba(8, 17, 31, .92);
+      border:1px solid rgba(255,255,255,.11);
+      box-shadow: var(--shadow);
+      color:var(--text);
+      transform: translateY(12px);
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .2s ease, transform .2s ease;
+      z-index:1000;
+    }
+    .toast.show{ opacity:1; transform: translateY(0); }
+
+    .hidden{ display:none !important; }
+
+    @media (max-width: 1100px){
+      .grid, .main-grid, .login-grid, .split { grid-template-columns: 1fr; }
+      .day-control{ grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 700px){
+      .wrap{ padding:14px; }
+      .topbar{ flex-direction:column; align-items:stretch; }
+      .stats{ grid-template-columns: 1fr 1fr; }
+      .day-control{ grid-template-columns: 1fr; }
+      .section-title{ flex-direction:column; align-items:flex-start; }
+      .hero, .card-inner, .sidebar-section, .login-card, .login-side { padding:16px; }
+      .login-side h1{ font-size:28px; }
+      .stats{ gap:10px; }
+      .stat .value{ font-size:24px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <div class="bg-orb orb1"></div>
+  <div class="bg-orb orb2"></div>
+  <div class="bg-orb orb3"></div>
+
+  <div id="loginView" class="login-screen">
+    <div class="login-card">
+      <div class="login-grid">
+        <div class="login-side">
+          <div class="brand" style="margin-bottom:18px;">
+            <div class="brand-mark">⚡</div>
+            <div>
+              <div>StreakVault</div>
+              <small>Private daily consistency tracker</small>
+            </div>
+          </div>
+          <h1 id="loginTitle">Build your streak with one local dashboard.</h1>
+          <p id="loginText">Track your daily tasks, plan tomorrow today, check off progress, log excuses, and keep every day saved on your laptop.</p>
+          <div class="notice" id="loginNotice">
+            Everything stays in your browser storage. You can export a backup anytime and import it later on the same laptop or another one.
+          </div>
+        </div>
+
+        <div class="login-side">
+          <div class="toggle">
+            <button id="loginToggleBtn" class="active" type="button">Login</button>
+            <button id="setupToggleBtn" type="button">First time setup</button>
+          </div>
+
+          <div id="loginPane">
+            <div class="field">
+              <label for="loginPass">Password</label>
+              <input id="loginPass" type="password" placeholder="Enter your password" autocomplete="current-password" />
+            </div>
+            <div class="btn-row">
+              <button class="btn primary" id="unlockBtn" type="button">Unlock dashboard</button>
+            </div>
+          </div>
+
+          <div id="setupPane" class="hidden">
+            <div class="field">
+              <label for="goalNameInput">Goal name</label>
+              <input id="goalNameInput" type="text" placeholder="Example: 60-Day Discipline Sprint" />
+            </div>
+            <div class="split">
+              <div class="field">
+                <label for="targetDaysInput">Streak target days</label>
+                <input id="targetDaysInput" type="number" min="1" max="3650" value="30" />
+              </div>
+              <div class="field">
+                <label for="startDateInput">Start date</label>
+                <input id="startDateInput" type="date" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="setupPass">Set password</label>
+              <input id="setupPass" type="password" placeholder="Create your local password" autocomplete="new-password" />
+            </div>
+            <div class="field">
+              <label for="setupPass2">Confirm password</label>
+              <input id="setupPass2" type="password" placeholder="Confirm password" autocomplete="new-password" />
+            </div>
+            <div class="btn-row">
+              <button class="btn success" id="createBtn" type="button">Create local workspace</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="appView" class="hidden">
+    <div class="wrap">
+      <div class="topbar">
+        <div class="brand">
+          <div class="brand-mark">⚡</div>
+          <div>
+            <div>StreakVault</div>
+            <small id="subTitle">Your private streak dashboard</small>
+          </div>
+        </div>
+        <div class="btn-row">
+          <div class="pill" id="timePill">📅 Today</div>
+          <button class="btn ghost" id="exportBtn" type="button">Export backup</button>
+          <button class="btn ghost" id="importBtn" type="button">Import backup</button>
+          <button class="btn danger" id="logoutBtn" type="button">Lock app</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <aside class="card">
+          <div class="hero">
+            <h1 id="goalHeading">Goal</h1>
+            <p id="goalSub">Plan tasks for each day, tick them off, and watch the streak grow.</p>
+
+            <div class="goal-row">
+              <div class="goal-badge">
+                <div>🎯</div>
+                <div>
+                  <strong id="goalNameText">—</strong>
+                  <span>Goal name</span>
+                </div>
+              </div>
+              <div class="goal-badge">
+                <div>📆</div>
+                <div>
+                  <strong id="targetDaysText">— days</strong>
+                  <span>Streak target</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="stats">
+              <div class="stat">
+                <div class="label">Current streak</div>
+                <div class="value" id="currentStreak">0</div>
+                <div class="sub">consecutive completed days</div>
+              </div>
+              <div class="stat">
+                <div class="label">Days completed</div>
+                <div class="value" id="daysDone">0</div>
+                <div class="sub">out of target days</div>
+              </div>
+              <div class="stat">
+                <div class="label">Remaining</div>
+                <div class="value" id="daysLeft">0</div>
+                <div class="sub">days left to finish</div>
+              </div>
+              <div class="stat">
+                <div class="label">Today progress</div>
+                <div class="value" id="todayPercent">0%</div>
+                <div class="sub">tasks checked off</div>
+              </div>
+            </div>
+
+            <div class="progress-wrap">
+              <div class="progress-head">
+                <div>
+                  <div class="progress-title">Overall streak progress</div>
+                  <div class="progress-meta" id="overallMeta">0 / 0 days finished</div>
+                </div>
+                <div class="pill" id="windowPill">Week view</div>
+              </div>
+              <div class="bar" aria-label="Overall progress"><span id="overallBar"></span></div>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <h3>Quick settings</h3>
+            <div class="field">
+              <label for="editGoalName">Goal name</label>
+              <input id="editGoalName" type="text" />
+            </div>
+            <div class="split">
+              <div class="field">
+                <label for="editTargetDays">Target days</label>
+                <input id="editTargetDays" type="number" min="1" />
+              </div>
+              <div class="field">
+                <label for="editStartDate">Start date</label>
+                <input id="editStartDate" type="date" />
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="btn primary" id="saveProfileBtn" type="button">Save profile</button>
+              <button class="btn warn" id="resetTodayBtn" type="button">Reset selected day</button>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <h3>Backup & safety</h3>
+            <p class="muted">Use export/import to keep a safe copy of your streak data.</p>
+            <div class="btn-row">
+              <button class="btn" id="exportBtn2" type="button">Download JSON</button>
+              <button class="btn" id="importBtn2" type="button">Restore JSON</button>
+            </div>
+            <input id="fileInput" type="file" accept="application/json" class="hidden" />
+          </div>
+        </aside>
+
+        <main class="main-grid">
+          <section class="card card-inner">
+            <div class="section-title">
+              <div>
+                <h2>Daily tasks planner</h2>
+                <span>Set what you want to do for any day — today or tomorrow.</span>
+              </div>
+              <div class="pill" id="selectedDayPill">Selected day</div>
+            </div>
+
+            <div class="day-control">
+              <div class="field" style="margin:0;">
+                <label for="selectedDate">Choose day</label>
+                <input id="selectedDate" type="date" />
+              </div>
+              <div class="field" style="margin:0;">
+                <label for="taskInput">Add task</label>
+                <input id="taskInput" type="text" placeholder="Example: 30-min coding practice" />
+              </div>
+              <div class="field" style="margin:0;">
+                <label for="planTemplate">Quick add</label>
+                <select id="planTemplate">
+                  <option value="">Templates</option>
+                  <option>Wake up before 7 AM</option>
+                  <option>DSA practice</option>
+                  <option>Workout / exercise</option>
+                  <option>Read for 30 minutes</option>
+                  <option>Build project</option>
+                  <option>Revision + recap</option>
+                </select>
+              </div>
+              <button class="btn success" id="addTaskBtn" type="button">Add to day</button>
+            </div>
+
+            <div class="btn-row" style="margin-bottom:14px;">
+              <button class="btn primary" id="saveDayBtn" type="button">Save day plan</button>
+              <button class="btn" id="loadTodayBtn" type="button">Jump to today</button>
+              <button class="btn" id="loadTomorrowBtn" type="button">Jump to tomorrow</button>
+            </div>
+
+            <div class="mini-head">
+              <h4 id="dayPlanTitle">Tasks for —</h4>
+              <small id="dayMeta">0 tasks planned</small>
+            </div>
+            <div id="taskList" class="task-list"></div>
+
+            <div class="progress-wrap" style="margin-top:16px;">
+              <div class="progress-head">
+                <div>
+                  <div class="progress-title">Day completion</div>
+                  <div class="progress-meta" id="dayProgressText">0%</div>
+                </div>
+                <div class="pill" id="dayScorePill">0/0 done</div>
+              </div>
+              <div class="bar"><span id="dayBar"></span></div>
+            </div>
+          </section>
+
+          <section class="card card-inner">
+            <div class="section-title">
+              <div>
+                <h2>Excuse check-in</h2>
+                <span>Write what stopped you today and review the patterns later.</span>
+              </div>
+              <div class="pill">🧠 consistency log</div>
+            </div>
+
+            <div class="field">
+              <label for="excuseBox">Excuses / blockers for the selected day</label>
+              <textarea id="excuseBox" placeholder="Example: I felt tired after lunch and skipped the workout."></textarea>
+            </div>
+            <div class="btn-row">
+              <button class="btn primary" id="saveExcuseBtn" type="button">Save excuse log</button>
+              <button class="btn" id="clearExcuseBtn" type="button">Clear box</button>
+            </div>
+
+            <div style="height:16px"></div>
+
+            <div class="mini-head">
+              <h4>Recent excuse notes</h4>
+              <small>Latest first</small>
+            </div>
+            <div id="excuseList" class="excuse-list"></div>
+          </section>
+        </main>
+      </div>
+
+      <div style="height:18px"></div>
+
+      <section class="card card-inner">
+        <div class="section-title">
+          <div>
+            <h2>Full target timeline</h2>
+            <span>Every day in your streak window with completion comparison.</span>
+          </div>
+          <div class="pill" id="timelineCount">0 days</div>
+        </div>
+        <div id="timeline" class="timeline-grid"></div>
+      </section>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+</div>
+
+<script>
+(() => {
+  const STORAGE_KEY = "streakVaultData_v1";
+  const SESSION_KEY = "streakVaultUnlocked_v1";
+
+  const $ = (id) => document.getElementById(id);
+  const loginView = $("loginView");
+  const appView = $("appView");
+  const toast = $("toast");
+
+  const today = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${da}`;
+  };
+
+  const formatDate = (iso) => {
+    if (!iso) return "—";
+    const d = new Date(iso + "T00:00:00");
+    return new Intl.DateTimeFormat(undefined, {
+      weekday: "short", year: "numeric", month: "short", day: "numeric"
+    }).format(d);
+  };
+
+  const addDays = (iso, days) => {
+    const d = new Date(iso + "T00:00:00");
+    d.setDate(d.getDate() + days);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${da}`;
+  };
+
+  const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+  const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  function hashString(str){
+    // Fast non-cryptographic hash for local-only password protection.
+    let h1 = 0xdeadbeef ^ str.length;
+    let h2 = 0x41c6ce57 ^ str.length;
+    for (let i = 0; i < str.length; i++) {
+      const ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return ((h2 >>> 0).toString(16) + (h1 >>> 0).toString(16)).padStart(16, "0");
+  }
+
+  const defaultState = {
+    version: 1,
+    profile: {
+      goalName: "My Consistency Sprint",
+      targetDays: 30,
+      startDate: today()
+    },
+    auth: {
+      salt: "local-user"
+    },
+    plans: {},
+    completions: {},
+    excuses: [],
+    meta: {
+      createdAt: new Date().toISOString(),
+      lastLoginAt: null
+    }
+  };
+
+  let state = loadState();
+  let selectedDate = today();
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return structuredClone(defaultState);
+      const parsed = JSON.parse(raw);
+      return {
+        ...structuredClone(defaultState),
+        ...parsed,
+        profile: { ...structuredClone(defaultState.profile), ...(parsed.profile || {}) },
+        auth: { ...structuredClone(defaultState.auth), ...(parsed.auth || {}) },
+        plans: parsed.plans || {},
+        completions: parsed.completions || {},
+        excuses: Array.isArray(parsed.excuses) ? parsed.excuses : [],
+        meta: { ...structuredClone(defaultState.meta), ...(parsed.meta || {}) }
+      };
+    } catch (e) {
+      console.error(e);
+      return structuredClone(defaultState);
+    }
+  }
+
+  function saveState(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function ensureSelectedDateInRange(){
+    const list = getTimelineDates();
+    if (!list.length) return selectedDate = today();
+    if (!list.includes(selectedDate)) selectedDate = list[0];
+  }
+
+  function getTimelineDates(){
+    const start = state.profile.startDate || today();
+    const total = clamp(parseInt(state.profile.targetDays || 30, 10) || 30, 1, 3650);
+    return Array.from({length: total}, (_, i) => addDays(start, i));
+  }
+
+  function getSelectedPlan(){
+    return state.plans[selectedDate] || [];
+  }
+
+  function getCompletion(date){
+    const plan = state.plans[date] || [];
+    const saved = state.completions[date] || { checked: [], excuse: "" };
+    const checked = Array.isArray(saved.checked) ? saved.checked : [];
+    const safeChecked = plan.map((_, i) => !!checked[i]);
+    const done = safeChecked.filter(Boolean).length;
+    const percent = plan.length ? Math.round((done / plan.length) * 100) : 0;
+    return {
+      plan,
+      checked: safeChecked,
+      done,
+      total: plan.length,
+      percent,
+      excuse: saved.excuse || ""
+    };
+  }
+
+  function isDayComplete(date){
+    const c = getCompletion(date);
+    return c.total > 0 && c.done === c.total;
+  }
+
+  function computeCurrentStreak(){
+    const list = getTimelineDates();
+    let streak = 0;
+    for (let i = list.length - 1; i >= 0; i--) {
+      if (list[i] > today()) continue;
+      if (isDayComplete(list[i])) streak++;
+      else break;
+    }
+    return streak;
+  }
+
+  function completedCount(){
+    const list = getTimelineDates();
+    return list.filter(d => isDayComplete(d)).length;
+  }
+
+  function remainingCount(){
+    return Math.max(0, state.profile.targetDays - completedCount());
+  }
+
+  function overallProgress(){
+    const total = clamp(parseInt(state.profile.targetDays || 30, 10) || 30, 1, 3650);
+    return Math.round((completedCount() / total) * 100);
+  }
+
+  function setTodayDatePill(){
+    $("timePill").textContent = `📅 ${formatDate(today())}`;
+  }
+
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.remove("show"), 2600);
+  }
+
+  function syncProfileInputs(){
+    $("goalNameText").textContent = state.profile.goalName || "My Consistency Sprint";
+    $("targetDaysText").textContent = `${state.profile.targetDays} days`;
+    $("goalHeading").textContent = state.profile.goalName || "Goal";
+    $("goalSub").textContent = `Start from ${formatDate(state.profile.startDate)} and keep the streak alive for ${state.profile.targetDays} days.`;
+    $("editGoalName").value = state.profile.goalName || "";
+    $("editTargetDays").value = state.profile.targetDays || 30;
+    $("editStartDate").value = state.profile.startDate || today();
+    $("startDateInput").value = state.profile.startDate || today();
+    $("targetDaysInput").value = state.profile.targetDays || 30;
+    $("goalNameInput").value ||= state.profile.goalName || "";
+  }
+
+  function render(){
+    ensureSelectedDateInRange();
+    setTodayDatePill();
+    syncProfileInputs();
+    $("selectedDate").value = selectedDate;
+    $("selectedDayPill").textContent = `Selected: ${formatDate(selectedDate)}`;
+
+    const list = getTimelineDates();
+    $("timelineCount").textContent = `${list.length} days`;
+    $("currentStreak").textContent = computeCurrentStreak();
+    $("daysDone").textContent = completedCount();
+    $("daysLeft").textContent = remainingCount();
+    $("overallMeta").textContent = `${completedCount()} / ${state.profile.targetDays} days finished`;
+
+    const overall = overallProgress();
+    $("overallBar").style.width = overall + "%";
+
+    renderPlan();
+    renderExcuses();
+    renderTimeline();
+    syncProfileInputs();
+  }
+
+  function renderPlan(){
+    const comp = getCompletion(selectedDate);
+    $("dayPlanTitle").textContent = `Tasks for ${formatDate(selectedDate)}`;
+    $("dayMeta").textContent = `${comp.total} task${comp.total === 1 ? "" : "s"} planned`;
+    $("todayPercent").textContent = `${comp.percent}%`;
+    $("dayProgressText").textContent = `${comp.percent}% complete`;
+    $("dayScorePill").textContent = `${comp.done}/${comp.total} done`;
+    $("dayBar").style.width = comp.percent + "%";
+    $("excuseBox").value = comp.excuse || "";
+
+    const taskList = $("taskList");
+    taskList.innerHTML = "";
+
+    if (!comp.plan.length){
+      taskList.innerHTML = `<div class="empty">No tasks for this day yet. Add tasks above and save the day plan.</div>`;
+      return;
+    }
+
+    comp.plan.forEach((task, idx) => {
+      const row = document.createElement("label");
+      row.className = "task" + (comp.checked[idx] ? " done" : "");
+      row.innerHTML = `
+        <input type="checkbox" ${comp.checked[idx] ? "checked" : ""} aria-label="Check task ${idx + 1}">
+        <div class="txt">${escapeHtml(task)}</div>
+        <button class="btn" style="padding:8px 10px;border-radius:12px;" type="button" aria-label="Remove task">✕</button>
+      `;
+
+      const checkbox = row.querySelector('input');
+      const removeBtn = row.querySelector('button');
+
+      checkbox.addEventListener("change", () => {
+        toggleTask(selectedDate, idx, checkbox.checked);
+      });
+
+      removeBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        removeTask(selectedDate, idx);
+      });
+
+      taskList.appendChild(row);
+    });
+  }
+
+  function renderExcuses(){
+    const sorted = [...state.excuses].sort((a,b) => b.ts.localeCompare(a.ts)).slice(0, 8);
+    const list = $("excuseList");
+    list.innerHTML = "";
+    if (!sorted.length){
+      list.innerHTML = `<div class="empty">No excuse notes yet. Save a reflection after a tough day.</div>`;
+      return;
+    }
+    sorted.forEach(entry => {
+      const el = document.createElement("div");
+      el.className = "journal-entry";
+      el.innerHTML = `<time>${formatDate(entry.date)} • ${new Date(entry.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</time><p>${escapeHtml(entry.text)}</p>`;
+      list.appendChild(el);
+    });
+  }
+
+  function renderTimeline(){
+    const list = getTimelineDates();
+    const tl = $("timeline");
+    tl.innerHTML = "";
+    const todayIndex = list.indexOf(today());
+
+    list.forEach((date, idx) => {
+      const c = getCompletion(date);
+      const card = document.createElement("div");
+      const complete = isDayComplete(date);
+      card.className = "day-card" + (date === selectedDate ? " active" : "") + (complete ? " done" : "");
+      card.innerHTML = `
+        <div class="d1">Day ${idx + 1}${idx === todayIndex ? " • today" : ""}</div>
+        <div class="d2">${formatDate(date).replace(",", "")}</div>
+        <div class="d3">${c.done}/${c.total} tasks • ${c.percent}%</div>
+        <div class="bar small mini-bar"><span style="width:${c.percent}%"></span></div>
+      `;
+      card.addEventListener("click", () => {
+        selectedDate = date;
+        render();
+      });
+      tl.appendChild(card);
+    });
+  }
+
+  function escapeHtml(text){
+    return String(text)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
+  function addTask(date, text){
+    if (!text.trim()) return;
+    state.plans[date] = state.plans[date] || [];
+    state.plans[date].push(text.trim());
+    state.completions[date] = state.completions[date] || { checked: [], excuse: "" };
+    state.completions[date].checked = state.completions[date].checked || [];
+    saveState();
+    render();
+  }
+
+  function toggleTask(date, index, checked){
+    const plan = state.plans[date] || [];
+    const comp = state.completions[date] || { checked: [], excuse: "" };
+    comp.checked = plan.map((_, i) => !!(comp.checked && comp.checked[i]));
+    comp.checked[index] = checked;
+    state.completions[date] = comp;
+    saveState();
+    render();
+    if (date === today() && checked && isDayComplete(date)) celebrate();
+  }
+
+  function removeTask(date, index){
+    const plan = state.plans[date] || [];
+    plan.splice(index, 1);
+    state.plans[date] = plan;
+    const comp = state.completions[date] || { checked: [], excuse: "" };
+    comp.checked = (comp.checked || []).filter((_, i) => i !== index);
+    state.completions[date] = comp;
+    saveState();
+    render();
+    showToast("Task removed.");
+  }
+
+  function saveDayPlan(){
+    const raw = $("taskInput").value.trim();
+    const template = $("planTemplate").value.trim();
+    const text = raw || template;
+    if (!text){
+      showToast("Add a task first.");
+      return;
+    }
+    addTask(selectedDate, text);
+    $("taskInput").value = "";
+    $("planTemplate").value = "";
+    showToast("Task saved for the selected day.");
+  }
+
+  function saveExcuse(){
+    const text = $("excuseBox").value.trim();
+    state.completions[selectedDate] = state.completions[selectedDate] || { checked: [], excuse: "" };
+    state.completions[selectedDate].excuse = text;
+    if (text){
+      state.excuses = state.excuses.filter(e => e.date !== selectedDate);
+      state.excuses.unshift({ id: uid(), date: selectedDate, text, ts: new Date().toISOString() });
+    } else {
+      state.excuses = state.excuses.filter(e => e.date !== selectedDate);
+    }
+    saveState();
+    render();
+    showToast("Excuse note saved.");
+  }
+
+  function clearSelectedDay(){
+    if (!confirm(`Reset all tasks and progress for ${formatDate(selectedDate)}?`)) return;
+    delete state.plans[selectedDate];
+    delete state.completions[selectedDate];
+    state.excuses = state.excuses.filter(e => e.date !== selectedDate);
+    saveState();
+    render();
+    showToast("Selected day reset.");
+  }
+
+  function saveProfile(){
+    const goalName = $("editGoalName").value.trim();
+    const targetDays = clamp(parseInt($("editTargetDays").value, 10) || 30, 1, 3650);
+    const startDate = $("editStartDate").value || today();
+    state.profile.goalName = goalName || "My Consistency Sprint";
+    state.profile.targetDays = targetDays;
+    state.profile.startDate = startDate;
+    saveState();
+    ensureSelectedDateInRange();
+    render();
+    showToast("Profile updated.");
+  }
+
+  function createWorkspace(){
+    const goalName = $("goalNameInput").value.trim() || "My Consistency Sprint";
+    const targetDays = clamp(parseInt($("targetDaysInput").value, 10) || 30, 1, 3650);
+    const startDate = $("startDateInput").value || today();
+    const pass = $("setupPass").value;
+    const pass2 = $("setupPass2").value;
+
+    if (!pass || pass.length < 4){
+      showToast("Use at least 4 characters for the password.");
+      return;
+    }
+    if (pass !== pass2){
+      showToast("Passwords do not match.");
+      return;
+    }
+
+    state = structuredClone(defaultState);
+    state.profile.goalName = goalName;
+    state.profile.targetDays = targetDays;
+    state.profile.startDate = startDate;
+    state.auth.salt = uid();
+    state.auth.hash = hashString(`${state.auth.salt}::${pass}`);
+    state.meta.createdAt = new Date().toISOString();
+    state.meta.lastLoginAt = new Date().toISOString();
+    saveState();
+    sessionStorage.setItem(SESSION_KEY, "1");
+    showToast("Workspace created.");
+    openApp();
+  }
+
+  function unlock(){
+    const pass = $("loginPass").value;
+    const hash = hashString(`${state.auth.salt || "local-user"}::${pass}`);
+    if (!state.auth.hash || hash !== state.auth.hash){
+      showToast("Wrong password.");
+      return;
+    }
+    state.meta.lastLoginAt = new Date().toISOString();
+    saveState();
+    sessionStorage.setItem(SESSION_KEY, "1");
+    openApp();
+  }
+
+  function openApp(){
+    loginView.classList.add("hidden");
+    appView.classList.remove("hidden");
+    render();
+  }
+
+  function lockApp(){
+    sessionStorage.removeItem(SESSION_KEY);
+    appView.classList.add("hidden");
+    loginView.classList.remove("hidden");
+    $("loginPass").value = "";
+    showToast("App locked.");
+  }
+
+  function exportJSON(){
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `streakvault-backup-${today()}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showToast("Backup downloaded.");
+  }
+
+  function importJSONFile(file){
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const imported = JSON.parse(reader.result);
+        if (!imported || !imported.profile || !imported.auth) throw new Error("Invalid backup");
+        state = {
+          ...structuredClone(defaultState),
+          ...imported,
+          profile: { ...structuredClone(defaultState.profile), ...(imported.profile || {}) },
+          auth: { ...structuredClone(defaultState.auth), ...(imported.auth || {}) },
+          plans: imported.plans || {},
+          completions: imported.completions || {},
+          excuses: Array.isArray(imported.excuses) ? imported.excuses : [],
+          meta: { ...structuredClone(defaultState.meta), ...(imported.meta || {}) }
+        };
+        saveState();
+        showToast("Backup restored.");
+        render();
+      } catch (e){
+        console.error(e);
+        showToast("Invalid JSON backup.");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function celebrate(){
+    // lightweight celebration
+    const el = document.createElement("div");
+    el.style.position = "fixed";
+    el.style.inset = "0";
+    el.style.pointerEvents = "none";
+    el.style.zIndex = "999";
+    el.innerHTML = Array.from({length:18}, (_,i) => {
+      const left = Math.random()*100;
+      const delay = Math.random()*0.2;
+      const color = ["#7c5cff", "#20c997", "#4cc9f0", "#ffb703"][i%4];
+      return `<span style="position:absolute;left:${left}vw;top:-10px;width:8px;height:14px;background:${color};opacity:.9;border-radius:3px;animation:fall 1.8s ease-in ${delay}s forwards;"></span>`;
+    }).join("");
+    document.body.appendChild(el);
+    const style = document.createElement("style");
+    style.textContent = `@keyframes fall{to{transform:translateY(110vh) rotate(420deg);opacity:0}}`;
+    document.head.appendChild(style);
+    setTimeout(() => { el.remove(); style.remove(); }, 2600);
+    showToast("All tasks done for this day. Great work.");
+  }
+
+  function initLoginModes(){
+    const hasWorkspace = !!state.auth.hash;
+    $("loginToggleBtn").addEventListener("click", () => {
+      $("loginPane").classList.remove("hidden");
+      $("setupPane").classList.add("hidden");
+      $("loginToggleBtn").classList.add("active");
+      $("setupToggleBtn").classList.remove("active");
+      $("loginTitle").textContent = "Welcome back.";
+      $("loginText").textContent = "Unlock your local streak dashboard and continue from your last saved day.";
+      $("loginNotice").textContent = hasWorkspace ? "Your data is already saved on this browser. Enter your password to open it." : "Create your first workspace to start saving local streak data.";
+    });
+    $("setupToggleBtn").addEventListener("click", () => {
+      $("loginPane").classList.add("hidden");
+      $("setupPane").classList.remove("hidden");
+      $("setupToggleBtn").classList.add("active");
+      $("loginToggleBtn").classList.remove("active");
+      $("loginTitle").textContent = "First time setup.";
+      $("loginText").textContent = "Create a protected local workspace for your streak goals and daily planning.";
+      $("loginNotice").textContent = "You can change the goal, target days, and start date later from the dashboard.";
+      $("startDateInput").value = today();
+    });
+    if (!hasWorkspace){
+      $("loginToggleBtn").click();
+      $("setupToggleBtn").click();
+      $("loginToggleBtn").classList.remove("active");
+    }
+  }
+
+  function bindEvents(){
+    $("unlockBtn").addEventListener("click", unlock);
+    $("createBtn").addEventListener("click", createWorkspace);
+    $("saveDayBtn").addEventListener("click", saveDayPlan);
+    $("saveExcuseBtn").addEventListener("click", saveExcuse);
+    $("clearExcuseBtn").addEventListener("click", () => { $("excuseBox").value = ""; });
+    $("saveProfileBtn").addEventListener("click", saveProfile);
+    $("logoutBtn").addEventListener("click", lockApp);
+    $("exportBtn").addEventListener("click", exportJSON);
+    $("exportBtn2").addEventListener("click", exportJSON);
+    $("importBtn").addEventListener("click", () => $("fileInput").click());
+    $("importBtn2").addEventListener("click", () => $("fileInput").click());
+    $("fileInput").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) importJSONFile(file);
+      e.target.value = "";
+    });
+
+    $("selectedDate").addEventListener("change", (e) => {
+      selectedDate = e.target.value || today();
+      render();
+    });
+    $("loadTodayBtn").addEventListener("click", () => {
+      selectedDate = today();
+      render();
+    });
+    $("loadTomorrowBtn").addEventListener("click", () => {
+      selectedDate = addDays(today(), 1);
+      if (!getTimelineDates().includes(selectedDate)) {
+        showToast("Tomorrow is outside your target range. Update start/target days if needed.");
+      }
+      render();
+    });
+    $("addTaskBtn").addEventListener("click", saveDayPlan);
+    $("taskInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") saveDayPlan();
+    });
+    $("planTemplate").addEventListener("change", () => {
+      if ($("planTemplate").value){
+        $("taskInput").value = $("planTemplate").value;
+      }
+    });
+    $("resetTodayBtn").addEventListener("click", clearSelectedDay);
+  }
+
+  function boot(){
+    initLoginModes();
+    bindEvents();
+    selectedDate = today();
+    const unlocked = sessionStorage.getItem(SESSION_KEY) === "1";
+    const hasWorkspace = !!state.auth.hash;
+    $("startDateInput").value = today();
+    $("editStartDate").value = state.profile.startDate || today();
+    if (hasWorkspace){
+      $("loginToggleBtn").click();
+    }
+    if (unlocked && hasWorkspace){
+      openApp();
+    } else {
+      loginView.classList.remove("hidden");
+      appView.classList.add("hidden");
+    }
+    render();
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
